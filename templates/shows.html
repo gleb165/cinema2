@@ -1,0 +1,7 @@
+{% extends 'base.html' %}
+
+{% block info %}
+    {% for object in object_list %}
+        <h1>{{ object }}</h1>
+    {% endfor %}
+{% endblock %}
