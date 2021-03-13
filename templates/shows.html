@@ -2,6 +2,19 @@
 
 {% block info %}
     {% for object in object_list %}
-        <h1>{{ object }}</h1>
+        <form method="post" action="{% url 'order' %}">
+        {% csrf_token %}
+            <h3>{{ object }} for {{ object.price }}</h3>
+            {% if user.is_authenticated %}
+                <input type="number" name="amount" value="0" min="1">
+                <input type="hidden" name="user" value="{{ user.id }}">
+                <input type="hidden" name="show_id" value="{{ object.id }}">
+                <input type="hidden" name="price" value="{{ object.price }}">
+                <input type="submit" value="Buy">
+            {% endif %}
+        </form>
+        {% if user.is_superuser and object.free == object.place.size %}
+            <a href="{% url 'update show' pk=object.id %}"><button>Change</button></a>
+        {% endif %}
     {% endfor %}
 {% endblock %}

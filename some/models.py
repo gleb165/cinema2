@@ -15,7 +15,6 @@ class MyUser(AbstractUser):
 class Place(models.Model):
     name = models.CharField(max_length=40, unique=True)
     size = models.PositiveSmallIntegerField(default=1)
-    busy = models.PositiveSmallIntegerField(default=0)
 
     def __str__(self):
         return self.name
@@ -35,7 +34,14 @@ class Show(models.Model):
     film = models.ForeignKey('Film', on_delete=models.CASCADE, related_query_name='shows')
     show_time_start = models.DateTimeField(default=now)
     show_time_end = models.DateTimeField(default=now)
+    free = models.PositiveSmallIntegerField(default=1)
     price = models.PositiveSmallIntegerField()
 
     def __str__(self):
         return f'{self.film} on {self.show_time_start}'
+
+
+class Order(models.Model):
+    user = models.ForeignKey('MyUser', on_delete=models.CASCADE)
+    show = models.ForeignKey('Show', on_delete=models.CASCADE)
+    amount = models.PositiveSmallIntegerField()

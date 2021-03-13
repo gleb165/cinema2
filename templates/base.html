@@ -16,6 +16,15 @@
         <a href="{% url 'login' %}"><button>Login</button></a>
         <a href="{% url 'registrate' %}"><button>Registrate</button></a>
     {% endif %}
+    {% for message in messages %}
+        <h2 style="color: {% if message.level_tag == 'error' %}
+            red
+        {% elif message.level_tag == 'info'%}green{% endif %}">
+        {{ message }}
+        </h2>
+        {{ message }}
+        <!--<h2 style="color: "></h2>-->
+    {% endfor %}
     {% block info %}
     {% endblock %}
 </body>
