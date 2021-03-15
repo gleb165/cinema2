@@ -5,6 +5,13 @@
     <title>Title</title>
 </head>
 <body>
+    {% for message in messages %}
+        <h2 style="color: {% if message.level_tag == 'error' %}
+            red
+        {% elif message.level_tag == 'info'%}green{% endif %}">
+        {{ message }}
+        </h2>
+    {% endfor %}
     <form method="post">
         {% csrf_token %}
         {{ form }}

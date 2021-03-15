@@ -1,10 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title>$Title$</title>
-</head>
-<body>
-$END$
-</body>
-</html>
+{% extends 'base.html' %}
+
+{% block info %}
+    <h3>Total spent: ${{ total }}</h3>
+    {% for object in object_list %}
+        <p>{{ object }} by price of ${{ object.show.price }}</p>
+    {% endfor %}
+{% endblock %}

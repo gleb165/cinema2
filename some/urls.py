@@ -2,7 +2,7 @@ from django.http import HttpResponse
 from django.urls import path
 
 from some.views import LogView, OutView, RegView, ShowList, FilmCreateView, PlaceCreateView, ShowCreateView, \
-    OrderCreateView, ShowUpdateView
+    OrderCreateView, ShowUpdateView, OrderListView
 
 urlpatterns = [
     path('', ShowList.as_view(), name='main'),
@@ -13,5 +13,6 @@ urlpatterns = [
     path('place/', PlaceCreateView.as_view(), name='add place'),
     path('show/', ShowCreateView.as_view(), name='add show'),
     path('order/', OrderCreateView.as_view(), name='order'),
-    path('show/<int:pk>/', ShowUpdateView.as_view(), name='update show')
+    path('show/<int:pk>/', ShowUpdateView.as_view(), name='update show'),
+    path('orders/', OrderListView.as_view(), name='orders'),
 ]
