@@ -7,7 +7,7 @@ from django.utils.deprecation import MiddlewareMixin
 TIME_TO_LOGOUT = datetime.timedelta(minutes=5)
 
 
-class MyMiddleware(MiddlewareMixin):
+class AutoLogout(MiddlewareMixin):
 
     def process_request(self, request):
         if request.user.is_authenticated and not request.user.is_superuser:

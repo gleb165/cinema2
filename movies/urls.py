@@ -1,7 +1,7 @@
 from django.http import HttpResponse
 from django.urls import path
 
-from some.views import LogView, OutView, RegView, ShowList, FilmCreateView, PlaceCreateView, ShowCreateView, \
+from movies.views import LogView, OutView, RegView, ShowList, FilmCreateView, PlaceCreateView, ShowCreateView, \
     OrderCreateView, ShowUpdateView, OrderListView
 
 urlpatterns = [

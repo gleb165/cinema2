@@ -9,14 +9,14 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
 
-from some.models import MyUser, Show, Film, Place, Order
+from movies.models import MyUser, Show, Film, Place, Order
 from django.db.models import Q
 
 # Create your views here.
 from django.urls import reverse_lazy, reverse
 from django.views.generic import FormView, ListView, CreateView, UpdateView
 
-from some.forms import RegForm, FilmForm, PlaceForm, ShowForm, OrderForm
+from movies.forms import RegForm, FilmForm, PlaceForm, ShowForm, OrderForm
 
 
 class LogView(LoginView):

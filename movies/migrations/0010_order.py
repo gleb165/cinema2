@@ -8,7 +8,7 @@ import django.db.models.deletion
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('some', '0009_auto_20210313_0935'),
+        ('movies', '0009_auto_20210313_0935'),
     ]
 
     operations = [
@@ -17,7 +17,7 @@ class Migration(migrations.Migration):
             fields=[
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('amount', models.PositiveSmallIntegerField()),
-                ('show', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='some.show')),
+                ('show', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='movies.show')),
                 ('user', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to=settings.AUTH_USER_MODEL)),
             ],
         ),

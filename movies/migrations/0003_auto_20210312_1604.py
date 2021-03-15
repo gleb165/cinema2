@@ -7,7 +7,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('some', '0002_remove_myuser_balance'),
+        ('movies', '0002_remove_myuser_balance'),
     ]
 
     operations = [

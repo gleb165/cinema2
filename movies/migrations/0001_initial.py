@@ -39,8 +39,8 @@ class Migration(migrations.Migration):
                 ('id', models.AutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
                 ('show_time', models.DateTimeField()),
                 ('price', models.PositiveSmallIntegerField()),
-                ('film', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_query_name='shows', to='some.film')),
-                ('place', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_query_name='shows', to='some.place')),
+                ('film', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_query_name='shows', to='movies.film')),
+                ('place', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_query_name='shows', to='movies.place')),
             ],
         ),
         migrations.CreateModel(
