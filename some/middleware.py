@@ -4,7 +4,7 @@ from django.contrib.auth import logout
 from django.utils import timezone
 from django.utils.deprecation import MiddlewareMixin
 
-TIME_TO_LOGOUT = datetime.timedelta(minutes=5)
+from cinema.settings import TIME_TO_LOGOUT
 
 
 class AutoLogout(MiddlewareMixin):

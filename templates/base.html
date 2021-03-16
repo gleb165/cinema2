@@ -12,6 +12,7 @@
         <a href="{% url 'logout' %}"><button>Logout</button></a>
         <a href="{% url 'orders' %}"><button>Orders</button></a>
             {% if request.user.is_superuser %}
+                <a href="{% url 'places' %}"><button>Places list</button></a>
                 <a href="{% url 'add place' %}"><button>Add place</button></a>
                 <a href="{% url 'add film' %}"><button>Add film</button></a>
                 <a href="{% url 'add show' %}"><button>Add show</button></a>

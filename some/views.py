@@ -9,14 +9,14 @@ from django.http import HttpResponseRedirect
 from django.shortcuts import render
 from django.utils import timezone
 
-from movies.models import MyUser, Show, Film, Place, Order
+from some.models import MyUser, Show, Film, Place, Order
 from django.db.models import Q
 
 # Create your views here.
 from django.urls import reverse_lazy, reverse
 from django.views.generic import FormView, ListView, CreateView, UpdateView
 
-from movies.forms import RegForm, FilmForm, PlaceForm, ShowForm, OrderForm
+from some.forms import RegForm, FilmForm, PlaceForm, ShowForm, OrderForm
 
 
 class LogView(LoginView):
@@ -79,9 +79,9 @@ class ShowList(ListView):
     def get_queryset(self):
         queryset = super().get_queryset()
         param_date = self.request.GET.get('date')
+        now = timezone.now()
         if param_date:
             param_date = param_date.strip()
-            now = timezone.now()
             next_day = timezone.now().date() + datetime.timedelta(days=1)
             if param_date == 'today':
                 queryset = queryset.filter(show_time_start__gt=now)\
@@ -90,6 +90,9 @@ class ShowList(ListView):
                 very_next_day = next_day + datetime.timedelta(days=1)
                 queryset = queryset.filter(show_time_start__gt=next_day) \
                     .filter(show_time_end__lt=very_next_day)
+        else:
+            queryset = queryset.filter(show_time_start__gt=now)
+
         return queryset
 
 
@@ -101,14 +104,14 @@ class OrderCreateView(PermissionRequiredMixin, CreateView):
     success_url = reverse_lazy('main')
 
     def form_valid(self, form):
-        show_free = form.cleaned_data['show'].free
+        show_busy = form.cleaned_data['show'].busy
         user_amount = form.cleaned_data['amount']
-        if show_free - user_amount < 0:
-            messages.error(self.request, f'Not enough free places, maximum is {show_free}')
+        show = Show.objects.get(id=form.cleaned_data['show'].id)
+        if show_busy + user_amount > show.place.size:
+            messages.error(self.request, f'Not enough free places')
             return HttpResponseRedirect(reverse('main'))
         messages.info(self.request, 'Thnx 4 order')
-        show = Show.objects.get(id=form.cleaned_data['show'].id)
-        show.free -= user_amount
+        show.busy += user_amount
         show.save()
         return super().form_valid(form)
 
@@ -148,6 +151,24 @@ class PlaceCreateView(PermissionRequiredMixin, CreateView):
     permission_required = 'request.user.is_superuser'
     model = Place
     success_url = reverse_lazy('main')
+    form_class = PlaceForm
+    template_name = 'form.html'
+
+
+class PlaceListView(PermissionRequiredMixin, ListView):
+    permission_required = 'request.user.is_superuser'
+    model = Place
+    template_name = 'places.html'
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        queryset = queryset.exclude(shows__busy__gt=0)
+        return queryset
+
+
+class PlaceUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = 'request.user.is_superuser'
+    model = Place
     form_class = PlaceForm
     template_name = 'form.html'
 

@@ -34,7 +34,7 @@ class Show(models.Model):
     film = models.ForeignKey('Film', on_delete=models.CASCADE, related_query_name='shows')
     show_time_start = models.DateTimeField(default=now)
     show_time_end = models.DateTimeField(default=now)
-    free = models.PositiveSmallIntegerField(default=1)
+    busy = models.PositiveSmallIntegerField(default=0)
     price = models.PositiveSmallIntegerField()
 
     def __str__(self):
@@ -48,3 +48,5 @@ class Order(models.Model):
 
     def __str__(self):
         return f'{self.amount} pieces on {self.show.film.name}'
+
+

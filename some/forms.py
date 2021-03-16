@@ -1,7 +1,7 @@
 from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import ModelForm
-from movies.models import Film, Place, Show, Order, MyUser
+from some.models import Film, Place, Show, Order, MyUser
 import datetime as dt
 
 
@@ -57,11 +57,6 @@ class ShowForm(ModelForm):
         widgets = {'show_time_start': MyDateTimeInput(),
                    'show_time_end': MyDateTimeInput(),
                    'free': forms.HiddenInput()}
-
-    def clean(self):
-        cleaned_data = super().clean()
-        cleaned_data['free'] = cleaned_data['place'].size
-        self.cleaned_data = cleaned_data
 
     '''def clean(self):
         cleaned_data = super().clean()

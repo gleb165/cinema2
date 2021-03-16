@@ -34,7 +34,7 @@
                 <input type="submit" value="Buy">
             {% endif %}
         </form>
-        {% if user.is_superuser and object.free == object.place.size %}
+        {% if user.is_superuser and object.busy == 0 %}
             <a href="{% url 'update show' pk=object.id %}"><button>Change</button></a>
         {% endif %}
     {% endfor %}
