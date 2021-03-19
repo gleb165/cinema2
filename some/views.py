@@ -61,6 +61,7 @@ class OutView(LogoutView):
 
 
 class ShowList(ListView):
+    http_method_names = ['get']
     model = Show
     template_name = 'shows.html'
     paginate_by = 5
@@ -125,9 +126,7 @@ class OrderListView(LoginRequiredMixin, ListView):
         return queryset.filter(user__id=self.request.user.id)
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        total = 0
-        for each in self.object_list:
-            total += each.amount * each.show.price
+        total = sum([each.amount * each.show.price for each in self.object_list])
         return super().get_context_data(total=total)
 
 
@@ -158,6 +157,7 @@ class PlaceCreateView(PermissionRequiredMixin, CreateView):
 class PlaceListView(PermissionRequiredMixin, ListView):
     permission_required = 'request.user.is_superuser'
     model = Place
+    paginate_by = 5
     template_name = 'places.html'
 
     def get_queryset(self):
@@ -169,6 +169,7 @@ class PlaceListView(PermissionRequiredMixin, ListView):
 class PlaceUpdateView(PermissionRequiredMixin, UpdateView):
     permission_required = 'request.user.is_superuser'
     model = Place
+    success_url = reverse_lazy('places')
     form_class = PlaceForm
     template_name = 'form.html'
 
@@ -179,15 +180,3 @@ class ShowCreateView(PermissionRequiredMixin, CreateView):
     success_url = reverse_lazy('main')
     form_class = ShowForm
     template_name = 'form.html'
-
-    def form_valid(self, form):
-        start = form.cleaned_data.get('show_time_start')
-        end = form.cleaned_data.get('show_time_end')
-        place = form.cleaned_data.get('place')
-        q1 = Q(place=place, show_time_start__gte=start, show_time_start__lte=end)
-        q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)
-
-        if len(Show.objects.filter(q1 | q2)) != 0:
-            messages.error(self.request, "Some show is already set in the same place simultaneously")
-            return HttpResponseRedirect(reverse('add show'))
-        return super().form_valid(form)

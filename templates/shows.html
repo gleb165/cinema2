@@ -25,7 +25,7 @@
     {% for object in object_list %}
         <form method="post" action="{% url 'order' %}">
         {% csrf_token %}
-            <h3>{{ object }} for {{ object.price }}</h3>
+            <h3>{{ object.film.name }} at {{ object.show_time_start }} for {{ object.price }}</h3>
             {% if user.is_authenticated %}
                 <input type="number" name="amount" value="0" min="1">
                 <input type="hidden" name="user" value="{{ user.id }}">

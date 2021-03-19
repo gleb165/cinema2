@@ -30,8 +30,8 @@ class Film(models.Model):
 
 
 class Show(models.Model):
-    place = models.ForeignKey('Place', on_delete=models.CASCADE, related_query_name='shows')
-    film = models.ForeignKey('Film', on_delete=models.CASCADE, related_query_name='shows')
+    place = models.ForeignKey('Place', on_delete=models.CASCADE, related_name='shows', related_query_name='shows')
+    film = models.ForeignKey('Film', on_delete=models.CASCADE, related_query_name='shows', related_name='shows')
     show_time_start = models.DateTimeField(default=now)
     show_time_end = models.DateTimeField(default=now)
     busy = models.PositiveSmallIntegerField(default=0)

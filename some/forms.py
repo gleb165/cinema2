@@ -1,4 +1,5 @@
 from django import forms
+from django.db.models import Q
 from django.core.exceptions import ValidationError
 from django.forms import ModelForm
 from some.models import Film, Place, Show, Order, MyUser
@@ -58,13 +59,22 @@ class ShowForm(ModelForm):
                    'show_time_end': MyDateTimeInput(),
                    'free': forms.HiddenInput()}
 
-    '''def clean(self):
+    def clean(self):
         cleaned_data = super().clean()
-        begin = cleaned_data.get('show_time_start')
+        start = cleaned_data.get('show_time_start')
         end = cleaned_data.get('show_time_end')
         delta = dt.timedelta(0)
-        if end - begin < delta:
-            raise ValidationError("The end of film shows can't be earlier then its beginning")'''
+
+        if end - start <= delta:
+            raise ValidationError("The end of film shows can't be earlier then its beginning")
+
+        place = cleaned_data.get('place')
+        q1 = Q(place=place, show_time_start__gte=start, show_time_start__lte=end)
+        q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)
+        #query = Show.objects.filter(q1 | q2).exclude(id__exact=place.id)
+
+        if len(query) != 0:
+            raise ValidationError("Some show is already set in the same place simultaneously")
 
 
 class OrderForm(ModelForm):

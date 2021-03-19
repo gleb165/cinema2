@@ -15,6 +15,9 @@ class PlaceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+
+
+
 class FilmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Film
@@ -27,8 +30,8 @@ class FilmSerializer(serializers.ModelSerializer):
 
 
 class ShowSerializer(serializers.ModelSerializer):
-    place = PlaceSerializer()
-    film = FilmSerializer()
+    place = PlaceSerializer(read_only=True)
+    film = FilmSerializer(read_only=True)
 
     class Meta:
         model = Show
@@ -44,13 +47,18 @@ class ShowSerializer(serializers.ModelSerializer):
         if not (film_start <= show_start.date() <= film_end) or \
                 not (film_start <= show_end.date() <= film_end):
             raise serializers.ValidationError('show must be held during film period')
+
+        show_busy = data['busy']
+        place_size = data['place']['size']
+        if show_busy > place_size:
+            raise serializers.ValidationError('can\'t buy more tickets than the size of place')
         return data
 
     def create(self, validated_data):
         place_data = validated_data.pop('place')
-        new_place = Place.objects.create(**place_data)
+        new_place = Place.objects.get_or_create(**place_data)
         film_data = validated_data.pop('film')
-        new_film = Film.objects.create(**film_data)
+        new_film = Film.objects.get_or_create(**film_data)
 
         show = Show.objects.create(place=new_place, film=new_film, **validated_data)
         return show

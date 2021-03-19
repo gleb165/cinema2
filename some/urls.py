@@ -7,7 +7,7 @@ from some.views import LogView, OutView, RegView, ShowList, FilmCreateView, Plac
     OrderCreateView, ShowUpdateView, OrderListView, PlaceListView, PlaceUpdateView
 
 router = routers.SimpleRouter()
-router.register(r'show', ShowViewSet)
+router.register(r'shows', ShowViewSet)
 
 
 urlpatterns = [
