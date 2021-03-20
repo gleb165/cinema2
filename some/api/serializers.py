@@ -16,9 +16,6 @@ class PlaceSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
-
-
-
 class FilmSerializer(serializers.ModelSerializer):
     class Meta:
         model = Film
@@ -39,7 +36,7 @@ class ShowSerializer(serializers.ModelSerializer):
         model = Show
         fields = '__all__'
 
-    def validate(self, data):
+    '''def validate(self, data):
         cleaned_data = super().validate(data)
         show_start = cleaned_data['show_time_start']
         show_end = cleaned_data['show_time_end']
@@ -76,7 +73,7 @@ class ShowSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Some show is already set "
                                               "in the same place simultaneously")
 
-        return cleaned_data
+        return cleaned_data'''
 
     def create(self, validated_data):
         place_data = validated_data.pop('place')
@@ -97,6 +94,7 @@ class ShowSerializer(serializers.ModelSerializer):
         film_inst = Film.objects.get(id=film.id, invoice=instance)
 
         return instance
+
 
 class OrderSerializer(serializers.ModelSerializer):
     user = MyUserSerializer
