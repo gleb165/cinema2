@@ -30,7 +30,7 @@ class ShowViewSet(viewsets.ModelViewSet):
     queryset = Show.objects.all()
     serializer_class = ShowSerializer
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
+    @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated, ))
     def create_order(self, request, pk):
         amount = request.data.get('amount')
         user = request.user.id
@@ -38,8 +38,10 @@ class ShowViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             show = Show.objects.get(id=pk)
             show.busy += int(amount)
-            show.save()
-            return Response(status=status.HTTP_201_CREATED)
+            if show.busy <= show.place.size:
+                serializer.save()
+                show.save()
+                return Response(status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def filter_day(self, request, first_day, second_day):

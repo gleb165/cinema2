@@ -137,6 +137,14 @@ class ShowUpdateView(PermissionRequiredMixin, UpdateView):
     success_url = reverse_lazy('main')
     template_name = 'form.html'
 
+    def post(self, request, *args, **kwargs):
+        pk = kwargs['pk']
+        amount = Show.objects.get(id=pk).busy
+        if amount:
+            messages.error(request, 'U cant modify show with already sold tickets')
+            return HttpResponseRedirect(reverse('update show', args=[pk]))
+        return super().post(request=self.request, *args, **kwargs)
+
 
 class FilmCreateView(PermissionRequiredMixin, CreateView):
     permission_required = 'request.user.is_superuser'

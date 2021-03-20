@@ -54,7 +54,7 @@ class PlaceForm(ModelForm):
 class ShowForm(ModelForm):
     class Meta:
         model = Show
-        fields = '__all__'
+        exclude = ('busy', )
         widgets = {'show_time_start': MyDateTimeInput(),
                    'show_time_end': MyDateTimeInput(),
                    'free': forms.HiddenInput()}
@@ -71,9 +71,9 @@ class ShowForm(ModelForm):
         place = cleaned_data.get('place')
         q1 = Q(place=place, show_time_start__gte=start, show_time_start__lte=end)
         q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)
-        #query = Show.objects.filter(q1 | q2).exclude(id__exact=place.id)
+        query = Show.objects.filter(q1 | q2)
 
-        if len(query) != 0:
+        if len(query) > 1:
             raise ValidationError("Some show is already set in the same place simultaneously")
 
 
