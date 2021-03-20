@@ -15,6 +15,9 @@ class PlaceSerializer(serializers.ModelSerializer):
         model = Place
         fields = '__all__'
 
+    def validate(self, attrs):
+        return attrs
+
 
 class FilmSerializer(serializers.ModelSerializer):
     class Meta:
@@ -28,16 +31,17 @@ class FilmSerializer(serializers.ModelSerializer):
 
 
 class ShowSerializer(serializers.ModelSerializer):
-    place = PlaceSerializer(read_only=True)
-    film = FilmSerializer(read_only=True)
-    busy = serializers.IntegerField(read_only=True)
+    place = serializers.PrimaryKeyRelatedField(default=PlaceSerializer, read_only=True)
+    film = serializers.PrimaryKeyRelatedField(default=FilmSerializer, read_only=True)
 
     class Meta:
         model = Show
         fields = '__all__'
+        read_only_fields = ('busy', )
 
-    '''def validate(self, data):
-        cleaned_data = super().validate(data)
+    def validate(self, data):
+        x = 5
+        cleaned_data = data
         show_start = cleaned_data['show_time_start']
         show_end = cleaned_data['show_time_end']
 
@@ -73,13 +77,13 @@ class ShowSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Some show is already set "
                                               "in the same place simultaneously")
 
-        return cleaned_data'''
+        return cleaned_data
 
     def create(self, validated_data):
         place_data = validated_data.pop('place')
-        new_place = Place.objects.get_or_create(**place_data)
+        new_place = Place.objects.get(**place_data)
         film_data = validated_data.pop('film')
-        new_film = Film.objects.get_or_create(**film_data)
+        new_film = Film.objects.get(**film_data)
 
         show = Show.objects.create(place=new_place, film=new_film, **validated_data)
         return show
