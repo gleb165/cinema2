@@ -1,4 +1,7 @@
+import datetime
+
 from django.db.models import Q
+from django.utils import timezone
 from rest_framework import serializers
 
 from some.models import MyUser, Place, Film, Show, Order
@@ -15,9 +18,6 @@ class PlaceSerializer(serializers.ModelSerializer):
         model = Place
         fields = '__all__'
 
-    def validate(self, attrs):
-        return attrs
-
 
 class FilmSerializer(serializers.ModelSerializer):
     class Meta:
@@ -31,64 +31,71 @@ class FilmSerializer(serializers.ModelSerializer):
 
 
 class ShowSerializer(serializers.ModelSerializer):
-    place = serializers.PrimaryKeyRelatedField(default=PlaceSerializer, read_only=True)
-    film = serializers.PrimaryKeyRelatedField(default=FilmSerializer, read_only=True)
 
     class Meta:
         model = Show
         fields = '__all__'
-        read_only_fields = ('busy', )
+        #read_only_fields = ('busy', )
 
-    def validate(self, data):
-        x = 5
-        cleaned_data = data
-        show_start = cleaned_data['show_time_start']
-        show_end = cleaned_data['show_time_end']
+    def validate(self, cleaned_data):
+        show_start = cleaned_data.get('show_time_start')
+        show_end = cleaned_data.get('show_time_end')
 
-        if show_start >= show_end:
-            raise serializers.ValidationError('finish must occur after start')
+        if show_start and show_end:
 
-        film = FilmSerializer(self.initial_data.get('film'))
-        if film.is_valid(raise_exception=True):
-            film_start = film.validated_data.get('begin')
-            film_end = film.validated_data.get('begin')
+            if show_start < timezone.now():
+                raise serializers.ValidationError('show cant be held in past')
 
-        if not (film_start <= show_start.date() <= film_end) or \
-                not (film_start <= show_end.date() <= film_end):
-            raise serializers.ValidationError('show must be held during film period')
+            if show_start >= show_end:
+                raise serializers.ValidationError('finish must occur after start')
 
-        show_busy = cleaned_data['busy']
+        film = cleaned_data.get('film')
 
-        place = PlaceSerializer(self.initial_data.get('place'))
-        place_size = place['size']
+        if film:
+            film_start = film.begin
+            film_end = film.end
 
-        start = cleaned_data.get('show_time_start')
-        end = cleaned_data.get('show_time_end')
+            if not (film_start <= show_start.date() <= film_end) or \
+                    not (film_start <= show_end.date() <= film_end):
+                raise serializers.ValidationError('show must be held during film period')
 
-        if show_busy > place_size:
+        show_busy = cleaned_data.get('busy', 0)
+        place = cleaned_data.get('place')
+
+        if place and show_busy > place.size:
             raise serializers.ValidationError('can\'t buy more tickets than the size of place')
 
-        place = cleaned_data.get('place')
-        q1 = Q(place=place, show_time_start__gte=start, show_time_start__lte=end)
-        q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)
-        query = Show.objects.filter(q1 | q2)
+        if place and show_start and show_end:
 
-        if len(query) > 1:
-            raise serializers.ValidationError("Some show is already set "
-                                              "in the same place simultaneously")
+            q1 = Q(place=place, show_time_start__gte=show_start, show_time_start__lte=show_end)
+            q2 = Q(place=place, show_time_end__gte=show_start, show_time_end__lte=show_end)
+            query = Show.objects.filter(q1 | q2)
+
+            if len(query) > 1:
+                raise serializers.ValidationError("Some show is already set "
+                                                  "in the same place simultaneously")
 
         return cleaned_data
 
     def create(self, validated_data):
-        place_data = validated_data.pop('place')
-        new_place = Place.objects.get(**place_data)
-        film_data = validated_data.pop('film')
-        new_film = Film.objects.get(**film_data)
+        place = validated_data.pop('place')
+        film = validated_data.pop('film')
+        return Show.objects.create(place=place, film=film, **validated_data)
 
-        show = Show.objects.create(place=new_place, film=new_film, **validated_data)
-        return show
 
     def update(self, instance, validated_data):
+        x = 5
+        instance.place = validated_data.get('place', instance.place)
+        instance.film = validated_data.get('film', instance.film)
+        instance.show_time_start = validated_data.get('show_time_start', instance.show_time_start)
+        instance.show_time_end = validated_data.get('show_time_end', instance.show_time_end)
+        instance.busy = validated_data.get('busy', instance.busy)
+        instance.price = validated_data.get('price', instance.price)
+        return instance
+
+
+
+    '''def update(self, instance, validated_data):
         place = validated_data.get('place', instance.place)
         film = validated_data.get('film', instance.film)
         instance.show_time_start = validated_data.get('show_time_start', instance.show_time_start)
@@ -97,7 +104,7 @@ class ShowSerializer(serializers.ModelSerializer):
         place_inst = Place.objects.get(id=place.id, invoice=instance)
         film_inst = Film.objects.get(id=film.id, invoice=instance)
 
-        return instance
+        return instance'''
 
 
 class OrderSerializer(serializers.ModelSerializer):
