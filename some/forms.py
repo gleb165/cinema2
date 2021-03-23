@@ -73,7 +73,7 @@ class ShowForm(ModelForm):
         q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)
         query = Show.objects.filter(q1 | q2)
 
-        if len(query) > 1:
+        if len(query) and not self.instance.pk or len(query) > 1:
             raise ValidationError("Some show is already set in the same place simultaneously")
 
 

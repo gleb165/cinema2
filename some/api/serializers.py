@@ -35,7 +35,7 @@ class ShowSerializer(serializers.ModelSerializer):
     class Meta:
         model = Show
         fields = '__all__'
-        #read_only_fields = ('busy', )
+        read_only_fields = ('busy', )
 
     def validate(self, cleaned_data):
         show_start = cleaned_data.get('show_time_start')
@@ -50,14 +50,12 @@ class ShowSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('finish must occur after start')
 
         film = cleaned_data.get('film')
+        film_start = film.begin
+        film_end = film.end
 
-        if film:
-            film_start = film.begin
-            film_end = film.end
-
-            if not (film_start <= show_start.date() <= film_end) or \
-                    not (film_start <= show_end.date() <= film_end):
-                raise serializers.ValidationError('show must be held during film period')
+        if not (film_start <= show_start.date() <= film_end) or \
+                not (film_start <= show_end.date() <= film_end):
+            raise serializers.ValidationError('show must be held during film period')
 
         show_busy = cleaned_data.get('busy', 0)
         place = cleaned_data.get('place')
@@ -71,7 +69,7 @@ class ShowSerializer(serializers.ModelSerializer):
             q2 = Q(place=place, show_time_end__gte=show_start, show_time_end__lte=show_end)
             query = Show.objects.filter(q1 | q2)
 
-            if len(query) > 1:
+            if len(query) and not self.instance or len(query) > 1:
                 raise serializers.ValidationError("Some show is already set "
                                                   "in the same place simultaneously")
 
@@ -82,9 +80,7 @@ class ShowSerializer(serializers.ModelSerializer):
         film = validated_data.pop('film')
         return Show.objects.create(place=place, film=film, **validated_data)
 
-
     def update(self, instance, validated_data):
-        x = 5
         instance.place = validated_data.get('place', instance.place)
         instance.film = validated_data.get('film', instance.film)
         instance.show_time_start = validated_data.get('show_time_start', instance.show_time_start)
@@ -92,19 +88,6 @@ class ShowSerializer(serializers.ModelSerializer):
         instance.busy = validated_data.get('busy', instance.busy)
         instance.price = validated_data.get('price', instance.price)
         return instance
-
-
-
-    '''def update(self, instance, validated_data):
-        place = validated_data.get('place', instance.place)
-        film = validated_data.get('film', instance.film)
-        instance.show_time_start = validated_data.get('show_time_start', instance.show_time_start)
-        instance.show_time_end = validated_data.get('show_time_end', instance.show_time_end)
-
-        place_inst = Place.objects.get(id=place.id, invoice=instance)
-        film_inst = Film.objects.get(id=film.id, invoice=instance)
-
-        return instance'''
 
 
 class OrderSerializer(serializers.ModelSerializer):

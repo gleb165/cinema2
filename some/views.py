@@ -10,7 +10,7 @@ from django.shortcuts import render
 from django.utils import timezone
 
 from some.models import MyUser, Show, Film, Place, Order
-from django.db.models import Q
+from django.db.models import Q, F, Sum, Max
 
 # Create your views here.
 from django.urls import reverse_lazy, reverse
@@ -122,12 +122,17 @@ class OrderListView(LoginRequiredMixin, ListView):
     template_name = 'orders.html'
 
     def get_queryset(self):
-        queryset = super().get_queryset()
-        return queryset.filter(user__id=self.request.user.id)
+        self.queryset = super().get_queryset()
+        self.queryset = self.queryset.filter(user__id=self.request.user.id)
+        return self.queryset
 
     def get_context_data(self, *, object_list=None, **kwargs):
-        total = sum([each.amount * each.show.price for each in self.object_list])
-        return super().get_context_data(total=total)
+        prev = super().get_context_data()
+        total = \
+            self.queryset.annotate(total=F('amount') * F('show__price')) \
+                .aggregate(Sum('total')).get('total__sum')
+        prev['total'] = total
+        return prev
 
 
 class ShowUpdateView(PermissionRequiredMixin, UpdateView):
@@ -143,6 +148,22 @@ class ShowUpdateView(PermissionRequiredMixin, UpdateView):
         if amount:
             messages.error(request, 'U cant modify show with already sold tickets')
             return HttpResponseRedirect(reverse('update show', args=[pk]))
+        return super().post(request=self.request, *args, **kwargs)
+
+
+class PlaceUpdateView(PermissionRequiredMixin, UpdateView):
+    permission_required = 'request.user.is_superuser'
+    model = Place
+    form_class = PlaceForm
+    success_url = reverse_lazy('places')
+    template_name = 'form.html'
+
+    def post(self, request, *args, **kwargs):
+        pk = kwargs['pk']
+        max = Place.objects.get(id=pk).shows.aggregate(Max('busy'))
+        if max.get('busy__max'):
+            messages.error(request, 'U cant modify place with already sold tickets')
+            return HttpResponseRedirect(reverse('update place', args=[pk]))
         return super().post(request=self.request, *args, **kwargs)
 
 
@@ -172,14 +193,6 @@ class PlaceListView(PermissionRequiredMixin, ListView):
         queryset = super().get_queryset()
         queryset = queryset.exclude(shows__busy__gt=0)
         return queryset
-
-
-class PlaceUpdateView(PermissionRequiredMixin, UpdateView):
-    permission_required = 'request.user.is_superuser'
-    model = Place
-    success_url = reverse_lazy('places')
-    form_class = PlaceForm
-    template_name = 'form.html'
 
 
 class ShowCreateView(PermissionRequiredMixin, CreateView):

@@ -9,14 +9,15 @@ from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
-from django.db.models import F, Q
+from django.db.models import F, Q, Max, Sum
 from rest_framework import status
+from rest_framework import generics
 
 from some.api.permissions import IsAdminOrReadOnly
 
 from cinema.settings import AUTH_USER_MODEL
-from some.api.serializers import ShowSerializer, OrderSerializer, FilmSerializer
-from some.models import Show, MyUser, Film
+from some.api.serializers import ShowSerializer, OrderSerializer, FilmSerializer, PlaceSerializer
+from some.models import Show, MyUser, Film, Place, Order
 
 
 @receiver(post_save, sender=AUTH_USER_MODEL)
@@ -27,10 +28,10 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 
 class ShowViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
-    queryset = Show.objects.all()
+    queryset = Show.objects.filter(show_time_start__gte=datetime.datetime.now())
     serializer_class = ShowSerializer
 
-    @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated, ))
+    @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated,))
     def create_order(self, request, pk):
         amount = request.data.get('amount')
         user = request.user.id
@@ -79,3 +80,46 @@ class ShowViewSet(viewsets.ModelViewSet):
         tomorrow = datetime.date.today() + datetime.timedelta(days=1)
         after_tomorrow = tomorrow + datetime.timedelta(days=1)
         return self.filter_day(request, tomorrow, after_tomorrow)
+
+
+class OrderListAPIView(generics.ListAPIView):
+    serializer_class = OrderSerializer
+    permission_classes = (IsAuthenticated,)
+    queryset = Order.objects.all()
+
+    def filter_queryset(self, queryset):
+        self.queryset = super().filter_queryset(queryset)
+        self.queryset = self.queryset.filter(user=self.request.user)
+        return self.queryset
+
+    def get_serializer_context(self):
+        context = super().get_serializer_context()
+        total = self.queryset.annotate(total=F('amount') * F('show__price')) \
+            .aggregate(Sum('total')).get('total__sum')
+        tmp = {'total spent': total}
+        context.update(tmp)
+        return context
+
+    def get_serializer(self, *args, **kwargs):
+        serializer = super().get_serializer()
+        total = self.queryset.annotate(total=F('amount') * F('show__price')) \
+            .aggregate(Sum('total')).get('total__sum')
+        serializer.context_data
+
+    def list(self, request, *args, **kwargs):
+        x = super().list(request, *args, **kwargs)
+        return x
+
+
+class PlaceViewSet(viewsets.ModelViewSet):
+    permission_classes = (IsAdminOrReadOnly,)
+    serializer_class = PlaceSerializer
+    queryset = Place.objects.all()
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs['pk']
+        max = Place.objects.get(id=pk).shows.aggregate(Max('busy'))
+        if max.get('busy__max'):
+            return Response({'errors': 'U cant modify place with already sold tickets'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
