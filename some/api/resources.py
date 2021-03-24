@@ -101,10 +101,9 @@ class OrderListAPIView(generics.ListAPIView):
         return context
 
     def get_serializer(self, *args, **kwargs):
-        serializer = super().get_serializer()
-        total = self.queryset.annotate(total=F('amount') * F('show__price')) \
-            .aggregate(Sum('total')).get('total__sum')
-        serializer.context_data
+        serializer = super().get_serializer(*args, **kwargs)
+        serializer = OrderSerializer({'orders': serializer.data, 'total_spent': 50})
+        return serializer
 
     def list(self, request, *args, **kwargs):
         x = super().list(request, *args, **kwargs)

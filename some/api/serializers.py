@@ -90,10 +90,18 @@ class ShowSerializer(serializers.ModelSerializer):
         return instance
 
 
-class OrderSerializer(serializers.ModelSerializer):
+class SingleOrderSerializer(serializers.ModelSerializer):
     user = MyUserSerializer
     show = ShowSerializer
 
     class Meta:
         model = Order
         fields = '__all__'
+
+
+class OrderSerializer(serializers.Serializer):
+    orders = SingleOrderSerializer(many=True)
+    total = serializers.IntegerField()
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
