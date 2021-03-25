@@ -44,7 +44,7 @@ class Show(models.Model):
 class Order(models.Model):
     user = models.ForeignKey('MyUser', on_delete=models.CASCADE)
     show = models.ForeignKey('Show', on_delete=models.CASCADE)
-    amount = models.PositiveSmallIntegerField()
+    amount = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):
         return f'{self.amount} pieces on {self.show.film.name}'

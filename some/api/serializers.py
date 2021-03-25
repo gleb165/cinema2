@@ -30,6 +30,15 @@ class FilmSerializer(serializers.ModelSerializer):
         return data
 
 
+class DetailShowSerializer(serializers.ModelSerializer):
+    place = PlaceSerializer()
+    film = FilmSerializer()
+
+    class Meta:
+        model = Show
+        fields = '__all__'
+
+
 class ShowSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -91,17 +100,16 @@ class ShowSerializer(serializers.ModelSerializer):
 
 
 class SingleOrderSerializer(serializers.ModelSerializer):
-    user = MyUserSerializer
-    show = ShowSerializer
+    show = ShowSerializer()
 
     class Meta:
         model = Order
-        fields = '__all__'
+        exclude = ['user']
 
 
 class OrderSerializer(serializers.Serializer):
-    orders = SingleOrderSerializer(many=True)
     total = serializers.IntegerField()
+    orders = SingleOrderSerializer(many=True)
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

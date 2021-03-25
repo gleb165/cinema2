@@ -16,14 +16,15 @@ from rest_framework import generics
 from some.api.permissions import IsAdminOrReadOnly
 
 from cinema.settings import AUTH_USER_MODEL
-from some.api.serializers import ShowSerializer, OrderSerializer, FilmSerializer, PlaceSerializer
+from some.api.serializers import ShowSerializer, SingleOrderSerializer, FilmSerializer, \
+    PlaceSerializer, OrderSerializer, DetailShowSerializer
 from some.models import Show, MyUser, Film, Place, Order
 
 
 @receiver(post_save, sender=AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
-        Token.objects.create(user=instance)
+        TemporaryToken.objects.create(user=instance)
 
 
 class ShowViewSet(viewsets.ModelViewSet):
@@ -31,11 +32,23 @@ class ShowViewSet(viewsets.ModelViewSet):
     queryset = Show.objects.filter(show_time_start__gte=datetime.datetime.now())
     serializer_class = ShowSerializer
 
+    def get_serializer_class(self):
+        x = super().get_serializer_class() if self.request.POST else DetailShowSerializer
+        return x
+
+    def update(self, request, *args, **kwargs):
+        pk = kwargs['pk']
+        show = Show.objects.get(id=pk)
+        if show.busy <= show.place.size:
+            return Response({'errors': 'U cant modify show with already sold tickets'},
+                            status=status.HTTP_403_FORBIDDEN)
+        return super().update(request, *args, **kwargs)
+
     @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated,))
     def create_order(self, request, pk):
         amount = request.data.get('amount')
         user = request.user.id
-        serializer = OrderSerializer(data={"amount": amount, "show": pk, "user": user})
+        serializer = SingleOrderSerializer(data={"amount": amount, "show": pk, "user": user})
         if serializer.is_valid():
             show = Show.objects.get(id=pk)
             show.busy += int(amount)
@@ -83,7 +96,7 @@ class ShowViewSet(viewsets.ModelViewSet):
 
 
 class OrderListAPIView(generics.ListAPIView):
-    serializer_class = OrderSerializer
+    serializer_class = SingleOrderSerializer
     permission_classes = (IsAuthenticated,)
     queryset = Order.objects.all()
 
@@ -96,17 +109,19 @@ class OrderListAPIView(generics.ListAPIView):
         context = super().get_serializer_context()
         total = self.queryset.annotate(total=F('amount') * F('show__price')) \
             .aggregate(Sum('total')).get('total__sum')
-        tmp = {'total spent': total}
+        tmp = {'total': total}
         context.update(tmp)
         return context
 
     def get_serializer(self, *args, **kwargs):
-        serializer = super().get_serializer(*args, **kwargs)
-        serializer = OrderSerializer({'orders': serializer.data, 'total_spent': 50})
+        ser = super().get_serializer(*args, **kwargs)
+        total = ser.context.get('total') or 0
+        serializer = OrderSerializer(data={'total': total, 'orders': ser.data})
+        serializer.is_valid()
         return serializer
 
     def list(self, request, *args, **kwargs):
-        x = super().list(request, *args, **kwargs)
+        x = super().list(request=request, *args, **kwargs)
         return x
 
 
