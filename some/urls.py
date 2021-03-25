@@ -2,13 +2,14 @@ from django.http import HttpResponse
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken import views
-from some.api.resources import ShowViewSet, PlaceViewSet, OrderListAPIView
+from some.api.resources import ShowViewSet, PlaceViewSet, OrderListAPIView, CustomAuthToken
 from some.views import LogView, OutView, RegView, ShowList, FilmCreateView, PlaceCreateView, ShowCreateView, \
     OrderCreateView, ShowUpdateView, OrderListView, PlaceListView, PlaceUpdateView
 
 router = routers.SimpleRouter()
 router.register(r'shows', ShowViewSet)
 router.register(r'places', PlaceViewSet)
+#router.register(r'auth', CustomAuthToken)
 #router.register(r'orders', OrderListAPIView.as_view())
 
 
@@ -25,7 +26,7 @@ urlpatterns = [
     path('order/', OrderCreateView.as_view(), name='order'),
     path('show/<int:pk>/', ShowUpdateView.as_view(), name='update show'),
     path('orders/', OrderListView.as_view(), name='orders'),
-    path('api/auth/', views.obtain_auth_token),
+    path('api/auth/', CustomAuthToken.as_view()),
     path('api/', include(router.urls)),
     path('api/orders/', OrderListAPIView.as_view())
 ]

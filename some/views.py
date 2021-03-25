@@ -118,6 +118,7 @@ class OrderCreateView(PermissionRequiredMixin, CreateView):
 
 
 class OrderListView(LoginRequiredMixin, ListView):
+    login_url = reverse_lazy('login')
     model = Order
     template_name = 'orders.html'
 

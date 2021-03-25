@@ -6,12 +6,14 @@ from django.utils import timezone
 from rest_framework import viewsets, settings
 from rest_framework.authentication import TokenAuthentication
 from rest_framework.authtoken.models import Token
+from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
 from rest_framework.response import Response
 from django.db.models import F, Q, Max, Sum
 from rest_framework import status
 from rest_framework import generics
+from some.api.custom_token import TemporaryToken
 
 from some.api.permissions import IsAdminOrReadOnly
 
@@ -25,6 +27,21 @@ from some.models import Show, MyUser, Film, Place, Order
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         TemporaryToken.objects.create(user=instance)
+
+
+class CustomAuthToken(ObtainAuthToken):
+
+    def post(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data,
+                                           context={'request': request})
+        serializer.is_valid(raise_exception=True)
+        user = serializer.validated_data['user']
+        token, created = TemporaryToken.objects.get_or_create(user=user)
+        return Response({
+            'token': token.key,
+            'user_id': user.pk,
+            'email': user.email
+        })
 
 
 class ShowViewSet(viewsets.ModelViewSet):

@@ -5,3 +5,5 @@ from django.db import models
 
 class TemporaryToken(Token):
     last_action = models.DateTimeField(default=timezone.now())
+
+

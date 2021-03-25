@@ -51,6 +51,7 @@ MIDDLEWARE = [
     'some.middleware.AutoLogout',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    #'some.middleware.AutoLogoutToken',
 ]
 
 ROOT_URLCONF = 'cinema.urls'
@@ -124,6 +125,6 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'some.api.custom_token.TemporaryToken',
+        'rest_framework.authentication.TokenAuthentication',
     ]
 }
