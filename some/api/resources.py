@@ -45,7 +45,7 @@ class CustomAuthToken(ObtainAuthToken):
 
 
 class ShowViewSet(viewsets.ModelViewSet):
-    permission_classes = (IsAdminOrReadOnly,)
+    #permission_classes = (IsAdminOrReadOnly,)
     queryset = Show.objects.filter(show_time_start__gte=datetime.datetime.now())
     serializer_class = ShowSerializer
 

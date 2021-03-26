@@ -27,6 +27,7 @@ urlpatterns = [
     path('show/<int:pk>/', ShowUpdateView.as_view(), name='update show'),
     path('orders/', OrderListView.as_view(), name='orders'),
     path('api/auth/', CustomAuthToken.as_view()),
+    #path('api/auth/', views.obtain_auth_token),
     path('api/', include(router.urls)),
     path('api/orders/', OrderListAPIView.as_view())
 ]

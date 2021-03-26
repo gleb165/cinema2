@@ -85,7 +85,7 @@ DATABASES = {
 }
 
 # automatic logout of simple user being inactive
-TIME_TO_LOGOUT = datetime.timedelta(minutes=5)
+TIME_TO_LOGOUT = datetime.timedelta(seconds=40)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -125,6 +125,7 @@ STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework.authentication.TokenAuthentication',
+        'some.api.custom_authentication.TemporaryTokenAuthentication'
+        #'rest_framework.authentication.TokenAuthentication',
     ]
 }
