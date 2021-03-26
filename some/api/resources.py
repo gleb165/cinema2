@@ -16,10 +16,10 @@ from rest_framework import generics
 from some.api.custom_token import TemporaryToken
 
 from some.api.permissions import IsAdminOrReadOnly
-
+from rest_framework.decorators import api_view
 from cinema.settings import AUTH_USER_MODEL
 from some.api.serializers import ShowSerializer, SingleOrderSerializer, FilmSerializer, \
-    PlaceSerializer, OrderSerializer, DetailShowSerializer
+    PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer
 from some.models import Show, MyUser, Film, Place, Order
 
 
@@ -27,6 +27,19 @@ from some.models import Show, MyUser, Film, Place, Order
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if created:
         TemporaryToken.objects.create(user=instance)
+
+@api_view(['POST'])
+def create_auth(request):
+    serialized = RegSerializer(data=request.data)
+    if serialized.is_valid():
+        user = MyUser.objects.create_user(username=serialized.validated_data['username'],
+            password=serialized.validated_data['password']
+        )
+        user.save()
+        token = TemporaryToken.objects.get(user=user)
+        return Response({'token': token.key}, status=status.HTTP_201_CREATED)
+    else:
+        return Response(serialized.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 class CustomAuthToken(ObtainAuthToken):
@@ -45,7 +58,7 @@ class CustomAuthToken(ObtainAuthToken):
 
 
 class ShowViewSet(viewsets.ModelViewSet):
-    #permission_classes = (IsAdminOrReadOnly,)
+    permission_classes = (IsAdminOrReadOnly,)
     queryset = Show.objects.filter(show_time_start__gte=datetime.datetime.now())
     serializer_class = ShowSerializer
 
@@ -78,6 +91,16 @@ class ShowViewSet(viewsets.ModelViewSet):
     def filter_day(self, request, first_day, second_day):
         start = request.query_params.get('start')
         end = request.query_params.get('end')
+        place_pk = request.query_params.get('place')
+        queryset = self.get_queryset()
+        if place_pk is not None:
+            try:
+                place_pk = int(place_pk)
+                place = Place.objects.get(id=place_pk)
+            except:
+                return Response({'Empty List': 'no shows for this place'},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         try:
             start = int(start)
             start_time = datetime.datetime(year=first_day.year, month=first_day.month,
@@ -85,7 +108,7 @@ class ShowViewSet(viewsets.ModelViewSet):
         except:
             start_time = first_day
 
-        queryset = self.get_queryset().filter(show_time_start__gte=start_time)
+        queryset = queryset.filter(show_time_start__gte=start_time)
 
         try:
             end = int(end)

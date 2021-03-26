@@ -13,6 +13,19 @@ class MyUserSerializer(serializers.ModelSerializer):
         model = MyUser
 
 
+class RegSerializer(serializers.ModelSerializer):
+    password_confirm = serializers.CharField()
+
+    class Meta:
+        fields = '__all__'
+        model = MyUser
+
+    def validate(self, data):
+        if data['password'] != data['password_confirm']:
+            raise  serializers.ValidationError('passwords must match')
+        return data
+
+
 class PlaceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Place

@@ -51,7 +51,6 @@ MIDDLEWARE = [
     'some.middleware.AutoLogout',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    #'some.middleware.AutoLogoutToken',
 ]
 
 ROOT_URLCONF = 'cinema.urls'
