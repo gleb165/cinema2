@@ -26,9 +26,6 @@ class RegForm(forms.Form):
 
 
 class FilmForm(ModelForm):
-    #begin = forms.DateField(widget=forms.DateInput, input_formats=['%y %m %d'], label='begin')
-    #end = forms.DateField(widget=forms.DateInput, input_formats=['%y %m %d'], label='end')
-
     class Meta:
         model = Film
         widgets = {'begin': MyDateInput(), 'end': MyDateInput()}

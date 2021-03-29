@@ -6,7 +6,6 @@ from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMix
 from django.contrib.auth.views import LoginView, LogoutView
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
-from django.shortcuts import render
 from django.utils import timezone
 
 from some.models import MyUser, Show, Film, Place, Order
