@@ -25,6 +25,10 @@ class RegSerializer(serializers.ModelSerializer):
             raise  serializers.ValidationError('passwords must match')
         return data
 
+    def create(self, validated_data):
+        user = MyUser.objects.create(username=validated_data['username'], password=validated_data['password'])
+        return user
+
 
 class PlaceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -38,7 +42,7 @@ class FilmSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
     def validate(self, data):
-        if data['begin'] > data['end']:
+        if data['begin'] >= data['end']:
             raise serializers.ValidationError('finish must occur after start')
         return data
 
@@ -110,6 +114,12 @@ class ShowSerializer(serializers.ModelSerializer):
         instance.busy = validated_data.get('busy', instance.busy)
         instance.price = validated_data.get('price', instance.price)
         return instance
+
+
+class CreateOrderSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Order
+        fields = '__all__'
 
 
 class SingleOrderSerializer(serializers.ModelSerializer):

@@ -42,8 +42,8 @@ class Show(models.Model):
 
 
 class Order(models.Model):
-    user = models.ForeignKey('MyUser', on_delete=models.CASCADE)
-    show = models.ForeignKey('Show', on_delete=models.CASCADE)
+    user = models.ForeignKey('MyUser', on_delete=models.DO_NOTHING)
+    show = models.ForeignKey('Show', on_delete=models.DO_NOTHING)
     amount = models.PositiveSmallIntegerField(default=1)
 
     def __str__(self):

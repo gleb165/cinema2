@@ -19,7 +19,7 @@ from some.api.permissions import IsAdminOrReadOnly
 from rest_framework.decorators import api_view
 from cinema.settings import AUTH_USER_MODEL
 from some.api.serializers import ShowSerializer, SingleOrderSerializer, FilmSerializer, \
-    PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer
+    PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer, CreateOrderSerializer, MyUserSerializer
 from some.models import Show, MyUser, Film, Place, Order
 
 
@@ -32,9 +32,7 @@ def create_auth_token(sender, instance=None, created=False, **kwargs):
 def create_auth(request):
     serialized = RegSerializer(data=request.data)
     if serialized.is_valid():
-        user = MyUser.objects.create_user(username=serialized.validated_data['username'],
-            password=serialized.validated_data['password']
-        )
+        user = serialized.save()
         user.save()
         token = TemporaryToken.objects.get(user=user)
         return Response({'token': token.key}, status=status.HTTP_201_CREATED)
@@ -45,8 +43,7 @@ def create_auth(request):
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data,
-                                           context={'request': request})
+        serializer = self.serializer_class(data=request.data, context={'request': request})
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data['user']
         token, created = TemporaryToken.objects.get_or_create(user=user)
@@ -78,14 +75,17 @@ class ShowViewSet(viewsets.ModelViewSet):
     def create_order(self, request, pk):
         amount = request.data.get('amount')
         user = request.user.id
-        serializer = SingleOrderSerializer(data={"amount": amount, "show": pk, "user": user})
+        serializer = CreateOrderSerializer(data={"amount": amount, "show": pk, "user": user})
         if serializer.is_valid():
             show = Show.objects.get(id=pk)
+            if show.show_time_end >= timezone.now():
+                return Response({'show error': 'trying to buy ticket for show in past'}, status=status.HTTP_400_BAD_REQUEST)
             show.busy += int(amount)
-            if show.busy <= show.place.size:
-                serializer.save()
-                show.save()
-                return Response(status=status.HTTP_201_CREATED)
+            if show.busy > show.place.size:
+                return Response({'amount error': 'not enough places in hall'}, status=status.HTTP_400_BAD_REQUEST)
+            serializer.save()
+            show.save()
+            return Response({'status': 'success'},status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
     def filter_day(self, request, first_day, second_day):
