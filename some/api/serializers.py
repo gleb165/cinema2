@@ -1,16 +1,27 @@
 import datetime
 
+from django.contrib.auth import authenticate
 from django.db.models import Q
 from django.utils import timezone
 from rest_framework import serializers
 
 from some.models import MyUser, Place, Film, Show, Order
 
+class LoginUserSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField()
 
-class MyUserSerializer(serializers.ModelSerializer):
+    def validate(self, data):
+        user = authenticate(username=data['username'], password=data['password'])
+        if user and user.is_active:
+            return user
+        raise serializers.ValidationError("Incorrect Credentials")
+
+
+'''class MyUserSerializer(serializers.ModelSerializer):
     class Meta:
         fields = '__all__'
-        model = MyUser
+        model = MyUser'''
 
 
 class RegSerializer(serializers.ModelSerializer):
@@ -26,7 +37,7 @@ class RegSerializer(serializers.ModelSerializer):
         return data
 
     def create(self, validated_data):
-        user = MyUser.objects.create(username=validated_data['username'], password=validated_data['password'])
+        user = MyUser.objects.create_user(username=validated_data['username'], password=validated_data['password'])
         return user
 
 

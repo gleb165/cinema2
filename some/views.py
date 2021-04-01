@@ -1,5 +1,4 @@
 import datetime
-
 from django.contrib import messages
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.mixins import PermissionRequiredMixin, LoginRequiredMixin
@@ -7,14 +6,10 @@ from django.contrib.auth.views import LoginView, LogoutView
 from django.db import IntegrityError
 from django.http import HttpResponseRedirect
 from django.utils import timezone
-
 from some.models import MyUser, Show, Film, Place, Order
 from django.db.models import Q, F, Sum, Max
-
-# Create your views here.
 from django.urls import reverse_lazy, reverse
 from django.views.generic import FormView, ListView, CreateView, UpdateView
-
 from some.forms import RegForm, FilmForm, PlaceForm, ShowForm, OrderForm
 
 

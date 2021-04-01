@@ -1,11 +1,9 @@
 import datetime
-
+from django.contrib.auth import authenticate
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
 from rest_framework import viewsets, settings
-from rest_framework.authentication import TokenAuthentication
-from rest_framework.authtoken.models import Token
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -14,12 +12,12 @@ from django.db.models import F, Q, Max, Sum
 from rest_framework import status
 from rest_framework import generics
 from some.api.custom_token import TemporaryToken
-
 from some.api.permissions import IsAdminOrReadOnly
 from rest_framework.decorators import api_view
 from cinema.settings import AUTH_USER_MODEL
 from some.api.serializers import ShowSerializer, SingleOrderSerializer, FilmSerializer, \
-    PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer, CreateOrderSerializer, MyUserSerializer
+    PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer, CreateOrderSerializer, \
+    LoginUserSerializer
 from some.models import Show, MyUser, Film, Place, Order
 
 
@@ -43,14 +41,13 @@ def create_auth(request):
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data, context={'request': request})
+        serializer = LoginUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.validated_data['user']
+        user = serializer.save()
         token, created = TemporaryToken.objects.get_or_create(user=user)
         return Response({
             'token': token.key,
             'user_id': user.pk,
-            'email': user.email
         })
 
 
@@ -71,6 +68,55 @@ class ShowViewSet(viewsets.ModelViewSet):
                             status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
 
+    def filter_queryset(self, queryset):
+        queryset = super().filter_queryset(queryset)
+        place_name = self.request.query_params.get('place')
+
+        if not self.request.query_params:
+            return queryset
+
+        if place_name is not None:
+            try:
+                place = Place.objects.get(name=place_name)
+            except:
+                return queryset.none()
+            queryset = queryset.filter(place=place)
+
+        day = self.request.query_params.get('day')
+
+        if day and day != 'today' and day != 'tomorrow':
+            return queryset.none()
+        if day == 'tomorrow':
+            first_day = datetime.date.today() + datetime.timedelta(days=1)
+            second_day = first_day + datetime.timedelta(days=1)
+        else:
+            first_day = timezone.now()
+            second_day = first_day + datetime.timedelta(days=1)
+
+        start = self.request.query_params.get('start')
+        end = self.request.query_params.get('end')
+
+        try:
+            start = int(start)
+            start_time = datetime.datetime(year=first_day.year, month=first_day.month,
+                                           day=first_day.day, hour=start)
+        except:
+            start_time = first_day
+
+        queryset = queryset.filter(show_time_start__gte=start_time)
+
+        try:
+            end = int(end)
+        except:
+            queryset = queryset.exclude(show_time_end__gte=second_day)
+            serializer = ShowSerializer(queryset, many=True)
+            return queryset
+        end_time = datetime.datetime(year=first_day.year, month=first_day.month,
+                                     day=first_day.day, hour=end)
+        queryset = queryset.exclude(show_time_end__gte=end_time)
+        serializer = ShowSerializer(queryset, many=True)
+        return queryset
+
     @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated,))
     def create_order(self, request, pk):
         amount = request.data.get('amount')
@@ -87,52 +133,6 @@ class ShowViewSet(viewsets.ModelViewSet):
             show.save()
             return Response({'status': 'success'},status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    def filter_day(self, request, first_day, second_day):
-        start = request.query_params.get('start')
-        end = request.query_params.get('end')
-        place_pk = request.query_params.get('place')
-        queryset = self.get_queryset()
-        if place_pk is not None:
-            try:
-                place_pk = int(place_pk)
-                place = Place.objects.get(id=place_pk)
-            except:
-                return Response({'Empty List': 'no shows for this place'},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            start = int(start)
-            start_time = datetime.datetime(year=first_day.year, month=first_day.month,
-                                           day=first_day.day, hour=start)
-        except:
-            start_time = first_day
-
-        queryset = queryset.filter(show_time_start__gte=start_time)
-
-        try:
-            end = int(end)
-        except:
-            queryset = queryset.exclude(show_time_end__gte=second_day)
-            serializer = ShowSerializer(queryset, many=True)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        end_time = datetime.datetime(year=first_day.year, month=first_day.month,
-                                     day=first_day.day, hour=end)
-        queryset = queryset.exclude(show_time_end__gte=end_time)
-        serializer = ShowSerializer(queryset, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @action(detail=False, methods=['get'])
-    def today(self, request):
-        td = timezone.now()
-        tomorrow = td + datetime.timedelta(days=1)
-        return self.filter_day(request, td, tomorrow)
-
-    @action(detail=False, methods=['get'])
-    def tomorrow(self, request):
-        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
-        after_tomorrow = tomorrow + datetime.timedelta(days=1)
-        return self.filter_day(request, tomorrow, after_tomorrow)
 
 
 class OrderListAPIView(generics.ListAPIView):

@@ -5,6 +5,7 @@
     <title>Title</title>
 </head>
 <body>
+    <a href="{% url 'main' %}"><button>Main page</button></a>
     {% for message in messages %}
         {{ message }}
     {% endfor %}
