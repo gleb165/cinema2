@@ -2,7 +2,8 @@ from django.http import HttpResponse
 from django.urls import path, include
 from rest_framework import routers
 from rest_framework.authtoken import views
-from some.api.resources import ShowViewSet, PlaceViewSet, OrderListAPIView, CustomAuthToken, create_auth
+from some.api.resources import ShowViewSet, PlaceViewSet, OrderListAPIView, CustomAuthToken, create_auth, \
+    FilmCreateAPIView
 from some.views import LogView, OutView, RegView, ShowList, FilmCreateView, PlaceCreateView, ShowCreateView, \
     OrderCreateView, ShowUpdateView, OrderListView, PlaceListView, PlaceUpdateView
 
@@ -28,7 +29,7 @@ urlpatterns = [
     path('orders/', OrderListView.as_view(), name='orders'),
     path('api/auth/', CustomAuthToken.as_view()),
     path('api/reg/', create_auth),
-    #path('api/auth/', views.obtain_auth_token),
     path('api/', include(router.urls)),
-    path('api/orders/', OrderListAPIView.as_view())
+    path('api/orders/', OrderListAPIView.as_view()),
+    path('api/film/', FilmCreateAPIView.as_view()),
 ]

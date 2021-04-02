@@ -43,7 +43,7 @@ class CustomAuthToken(ObtainAuthToken):
     def post(self, request, *args, **kwargs):
         serializer = LoginUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        user = serializer.save()
+        user = serializer.validated_data
         token, created = TemporaryToken.objects.get_or_create(user=user)
         return Response({
             'token': token.key,
@@ -57,13 +57,13 @@ class ShowViewSet(viewsets.ModelViewSet):
     serializer_class = ShowSerializer
 
     def get_serializer_class(self):
-        x = super().get_serializer_class() if self.request.POST else DetailShowSerializer
+        x = super().get_serializer_class() if self.request.data else DetailShowSerializer
         return x
 
     def update(self, request, *args, **kwargs):
         pk = kwargs['pk']
         show = Show.objects.get(id=pk)
-        if show.busy <= show.place.size:
+        if show.busy != 0:
             return Response({'errors': 'U cant modify show with already sold tickets'},
                             status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
@@ -177,3 +177,8 @@ class PlaceViewSet(viewsets.ModelViewSet):
             return Response({'errors': 'U cant modify place with already sold tickets'},
                             status=status.HTTP_403_FORBIDDEN)
         return super().update(request, *args, **kwargs)
+
+
+class FilmCreateAPIView(generics.CreateAPIView):
+    permission_classes = (IsAdminUser, )
+    serializer_class = FilmSerializer

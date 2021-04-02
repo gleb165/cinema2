@@ -65,6 +65,11 @@ class ShowForm(ModelForm):
         if end - start <= delta:
             raise ValidationError("The end of film shows can't be earlier then its beginning")
 
+        film = cleaned_data.get('film')
+        if not (film.begin <= start.date() <= film.end) or \
+                not (film.begin <= end.date() <= film.end):
+            raise ValidationError('show must be held during film period')
+
         place = cleaned_data.get('place')
         q1 = Q(place=place, show_time_start__gte=start, show_time_start__lte=end)
         q2 = Q(place=place, show_time_end__gte=start, show_time_end__lte=end)

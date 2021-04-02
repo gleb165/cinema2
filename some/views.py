@@ -58,7 +58,7 @@ class ShowList(ListView):
     http_method_names = ['get']
     model = Show
     template_name = 'shows.html'
-    paginate_by = 5
+    paginate_by = 2
 
     def get_context_data(self, *, object_list=None, **kwargs):
         return super().get_context_data(page_name='shows')

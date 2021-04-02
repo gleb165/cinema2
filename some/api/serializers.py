@@ -18,12 +18,6 @@ class LoginUserSerializer(serializers.Serializer):
         raise serializers.ValidationError("Incorrect Credentials")
 
 
-'''class MyUserSerializer(serializers.ModelSerializer):
-    class Meta:
-        fields = '__all__'
-        model = MyUser'''
-
-
 class RegSerializer(serializers.ModelSerializer):
     password_confirm = serializers.CharField()
 
