@@ -1,9 +1,8 @@
 import datetime
-from django.contrib.auth import authenticate
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.utils import timezone
-from rest_framework import viewsets, settings
+from rest_framework import viewsets
 from rest_framework.authtoken.views import ObtainAuthToken
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated, IsAdminUser
@@ -18,7 +17,7 @@ from cinema.settings import AUTH_USER_MODEL
 from some.api.serializers import ShowSerializer, SingleOrderSerializer, FilmSerializer, \
     PlaceSerializer, OrderSerializer, DetailShowSerializer, RegSerializer, CreateOrderSerializer, \
     LoginUserSerializer
-from some.models import Show, MyUser, Film, Place, Order
+from some.models import Show, Place, Order
 
 
 @receiver(post_save, sender=AUTH_USER_MODEL)
@@ -56,7 +55,7 @@ class CustomAuthToken(ObtainAuthToken):
 
 class ShowViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
-    queryset = Show.objects.filter(show_time_start__gte=datetime.datetime.now())
+    queryset = Show.objects.filter(show_time_start__gte=timezone.now())
     serializer_class = ShowSerializer
 
     def get_serializer_class(self):
@@ -107,12 +106,16 @@ class ShowViewSet(viewsets.ModelViewSet):
 
         try:
             start = int(start)
-            start_time = datetime.datetime(year=first_day.year, month=first_day.month,
+            start_time = timezone.datetime(year=first_day.year, month=first_day.month,
                                            day=first_day.day, hour=start)
         except:
-            start_time = first_day
+            if start is not None:
+                return queryset.none()
+            else:
+                start_time = timezone.now()
 
-        queryset = queryset.filter(show_time_start__gt=start_time)
+        queryset = queryset.exclude(show_time_start__gt=first_day+datetime.timedelta(days=1))\
+            .filter(show_time_start__gt=start_time)
 
         return queryset
 

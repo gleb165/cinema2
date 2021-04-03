@@ -7,6 +7,7 @@ from rest_framework import serializers
 
 from some.models import MyUser, Place, Film, Show, Order
 
+
 class LoginUserSerializer(serializers.Serializer):
     username = serializers.CharField()
     password = serializers.CharField()
