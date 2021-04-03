@@ -23,11 +23,13 @@ from some.models import Show, MyUser, Film, Place, Order
 
 @receiver(post_save, sender=AUTH_USER_MODEL)
 def create_auth_token(sender, instance=None, created=False, **kwargs):
+    # automatically create token if user is created
     if created:
         TemporaryToken.objects.create(user=instance)
 
+
 @api_view(['POST'])
-def create_auth(request):
+def create_auth(request):  # creating new user
     serialized = RegSerializer(data=request.data)
     if serialized.is_valid():
         user = serialized.save()
@@ -41,6 +43,7 @@ def create_auth(request):
 class CustomAuthToken(ObtainAuthToken):
 
     def post(self, request, *args, **kwargs):
+        # get token via logging in
         serializer = LoginUserSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.validated_data
@@ -57,10 +60,14 @@ class ShowViewSet(viewsets.ModelViewSet):
     serializer_class = ShowSerializer
 
     def get_serializer_class(self):
-        x = super().get_serializer_class() if self.request.data else DetailShowSerializer
-        return x
+        # DetailShowSerializer if get method - ShowSerializer if unsafe method
+        if self.action == 'retrieve' or self.action == 'list':
+            return DetailShowSerializer
+        else:
+            return super().get_serializer()
 
     def update(self, request, *args, **kwargs):
+        # deny changes if at least one ticket has been sold
         pk = kwargs['pk']
         show = Show.objects.get(id=pk)
         if show.busy != 0:
@@ -69,6 +76,7 @@ class ShowViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def filter_queryset(self, queryset):
+        # filter queryset according to query params
         queryset = super().filter_queryset(queryset)
         place_name = self.request.query_params.get('place')
 
@@ -109,29 +117,31 @@ class ShowViewSet(viewsets.ModelViewSet):
             end = int(end)
         except:
             queryset = queryset.exclude(show_time_end__gte=second_day)
-            serializer = ShowSerializer(queryset, many=True)
+            # serializer = ShowSerializer(queryset, many=True)
             return queryset
         end_time = datetime.datetime(year=first_day.year, month=first_day.month,
                                      day=first_day.day, hour=end)
         queryset = queryset.exclude(show_time_end__gte=end_time)
-        serializer = ShowSerializer(queryset, many=True)
+        # serializer = ShowSerializer(queryset, many=True)
         return queryset
 
     @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated,))
     def create_order(self, request, pk):
+        # action to buy tickets
         amount = request.data.get('amount')
         user = request.user.id
         serializer = CreateOrderSerializer(data={"amount": amount, "show": pk, "user": user})
         if serializer.is_valid():
             show = Show.objects.get(id=pk)
-            if show.show_time_end >= timezone.now():
-                return Response({'show error': 'trying to buy ticket for show in past'}, status=status.HTTP_400_BAD_REQUEST)
+            if show.show_time_end <= timezone.now():
+                return Response({'show error': 'trying to buy ticket for show in past'},
+                                status=status.HTTP_400_BAD_REQUEST)
             show.busy += int(amount)
             if show.busy > show.place.size:
                 return Response({'amount error': 'not enough places in hall'}, status=status.HTTP_400_BAD_REQUEST)
             serializer.save()
             show.save()
-            return Response({'status': 'success'},status=status.HTTP_201_CREATED)
+            return Response({'tickets': amount}, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
@@ -141,11 +151,13 @@ class OrderListAPIView(generics.ListAPIView):
     queryset = Order.objects.all()
 
     def filter_queryset(self, queryset):
+        # list only user's orders
         self.queryset = super().filter_queryset(queryset)
         self.queryset = self.queryset.filter(user=self.request.user)
         return self.queryset
 
     def get_serializer_context(self):
+        # get the sum of spent money on each page of orders
         context = super().get_serializer_context()
         total = self.queryset.annotate(total=F('amount') * F('show__price')) \
             .aggregate(Sum('total')).get('total__sum')
@@ -160,10 +172,6 @@ class OrderListAPIView(generics.ListAPIView):
         serializer.is_valid()
         return serializer
 
-    def list(self, request, *args, **kwargs):
-        x = super().list(request=request, *args, **kwargs)
-        return x
-
 
 class PlaceViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAdminOrReadOnly,)
@@ -171,6 +179,7 @@ class PlaceViewSet(viewsets.ModelViewSet):
     queryset = Place.objects.all()
 
     def update(self, request, *args, **kwargs):
+        # unable to modify place if it has sold tickets
         pk = kwargs['pk']
         max = Place.objects.get(id=pk).shows.aggregate(Max('busy'))
         if max.get('busy__max'):
@@ -180,5 +189,5 @@ class PlaceViewSet(viewsets.ModelViewSet):
 
 
 class FilmCreateAPIView(generics.CreateAPIView):
-    permission_classes = (IsAdminUser, )
+    permission_classes = (IsAdminUser,)
     serializer_class = FilmSerializer
