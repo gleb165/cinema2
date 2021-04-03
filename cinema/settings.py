@@ -84,7 +84,7 @@ DATABASES = {
 }
 
 # automatic logout of simple user being inactive
-TIME_TO_LOGOUT = datetime.timedelta(seconds=40*15)
+TIME_TO_LOGOUT = datetime.timedelta(minutes=5)
 
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
@@ -128,5 +128,5 @@ REST_FRAMEWORK = {
         #'rest_framework.authentication.TokenAuthentication',
     ],
     'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.LimitOffsetPagination',
-    'PAGE_SIZE': 1
+    'PAGE_SIZE': 5
 }

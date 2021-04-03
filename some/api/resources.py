@@ -78,6 +78,10 @@ class ShowViewSet(viewsets.ModelViewSet):
     def filter_queryset(self, queryset):
         # filter queryset according to query params
         queryset = super().filter_queryset(queryset)
+        if self.request.query_params.get('sort') == 'date':
+            queryset = queryset.order_by('show_time_start')
+        elif self.request.query_params.get('sort') == 'price':
+            queryset = queryset.order_by('price')
         place_name = self.request.query_params.get('place')
 
         if not self.request.query_params:
@@ -96,13 +100,10 @@ class ShowViewSet(viewsets.ModelViewSet):
             return queryset.none()
         if day == 'tomorrow':
             first_day = datetime.date.today() + datetime.timedelta(days=1)
-            second_day = first_day + datetime.timedelta(days=1)
         else:
-            first_day = timezone.now()
-            second_day = first_day + datetime.timedelta(days=1)
+            first_day = datetime.date.today()
 
         start = self.request.query_params.get('start')
-        end = self.request.query_params.get('end')
 
         try:
             start = int(start)
@@ -111,18 +112,8 @@ class ShowViewSet(viewsets.ModelViewSet):
         except:
             start_time = first_day
 
-        queryset = queryset.filter(show_time_start__gte=start_time)
+        queryset = queryset.filter(show_time_start__gt=start_time)
 
-        try:
-            end = int(end)
-        except:
-            queryset = queryset.exclude(show_time_end__gte=second_day)
-            # serializer = ShowSerializer(queryset, many=True)
-            return queryset
-        end_time = datetime.datetime(year=first_day.year, month=first_day.month,
-                                     day=first_day.day, hour=end)
-        queryset = queryset.exclude(show_time_end__gte=end_time)
-        # serializer = ShowSerializer(queryset, many=True)
         return queryset
 
     @action(detail=True, methods=['post'], permission_classes=(IsAuthenticated,))
